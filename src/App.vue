@@ -166,13 +166,32 @@ header {
   max-width: 500px; margin: 0 auto;
 }
 
+/* --- UPDATED IMAGE STYLING --- */
 .card-image-container {
-  width: calc(100% + 40px); margin: -20px -20px 15px -20px;
-  height: 200px; overflow: hidden; border-radius: 28px 28px 0 0;
+  width: calc(100% + 40px); 
+  margin: -20px -20px 15px -20px;
+  /* Use aspect-ratio instead of fixed height for a modern look */
+  aspect-ratio: 16 / 9; 
+  overflow: hidden; 
+  border-radius: 28px 28px 0 0;
   position: relative;
+  background: #f0f0f2; /* Placeholder color while loading */
 }
 
-.location-image { width: 100%; height: 100%; object-fit: cover; }
+.location-image { 
+  width: 100%; 
+  height: 100%; 
+  /* 'cover' ensures the image fills the area without stretching */
+  /* 'center' keeps the subject of the photo in the middle */
+  object-fit: cover; 
+  object-position: center;
+  display: block;
+}
+
+/* Subtle loading state to handle different sizes gracefully */
+.location-image[src=""] {
+  visibility: hidden;
+}
 
 .image-gradient {
   position: absolute; bottom: 0; width: 100%; height: 50%;
