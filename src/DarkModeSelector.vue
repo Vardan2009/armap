@@ -1,11 +1,7 @@
-<!-- Dark mode selector -->
 <template>
-  <!-- <div class="action-btn action-btn-inline">test</div> -->
-
-  <!-- use action-btn -->
   <button
     @click="toggleDarkMode"
-    class="action-btn action-btn-inline"
+    class="transparent-btn-inline"
     style="background: transparent"
   >
     <span class="inline-icon">

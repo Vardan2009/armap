@@ -10,7 +10,7 @@
 
   <Transition name="slide-up">
     <div v-if="selectedPoint" class="story-card">
-      <button @click="selectedPoint = null" class="close-btn">✕</button>
+      <button @click="close" class="close-btn">✕</button>
 
       <div class="card-image-container">
         <img :src="selectedPoint.image" class="location-image" />
@@ -111,13 +111,24 @@ onMounted(() => {
         animate: true,
         duration: 1.5,
       });
+
+      mapRef.value.classList.add("focused");
     });
 
     clusters.addLayer(marker);
   });
 
   map.addLayer(clusters);
+
+  map.on("movestart", () => {
+    mapRef.value.classList.remove("focused");
+  });
 });
+
+const close = () => {
+  selectedPoint.value = null;
+  mapRef.value.classList.remove("focused");
+};
 </script>
 
 <style>
@@ -134,7 +145,12 @@ body {
   --text-color: #1c1c1e;
   --background-color-lighter: #ffffff;
 
-  --header-color: rgba(255, 255, 255, 0.7);
+  --header-color: rgba(255, 255, 255, 0.5);
+
+  --red-color: #ff3b30;
+  --primary-color: green;
+
+  user-select: none;
 }
 
 body.dark {
@@ -142,7 +158,7 @@ body.dark {
   --text-color: #fefefe;
   --background-color-lighter: #2c2c2e;
 
-  --header-color: rgba(28, 28, 30, 0.7);
+  --header-color: rgba(28, 28, 30, 0.5);
 }
 
 body,
@@ -182,6 +198,12 @@ header {
   width: 100%;
   position: absolute;
   z-index: 0;
+
+  transition: 1s;
+}
+
+.map.focused {
+  transform: translateY(-100px) scale(2);
 }
 
 .pulse-marker {
@@ -193,7 +215,6 @@ header {
   width: 12px;
   height: 12px;
   background: #ff3b30;
-  border: 2px solid white;
   border-radius: 50%;
   z-index: 10;
 }
@@ -203,7 +224,7 @@ header {
   height: 35px;
   background: rgba(255, 59, 48, 0.4);
   border-radius: 50%;
-  animation: pulse-animation 2s infinite;
+  animation: pulse-animation 3s infinite;
 }
 @keyframes pulse-animation {
   0% {
@@ -211,7 +232,7 @@ header {
     opacity: 1;
   }
   100% {
-    transform: scale(2.2);
+    transform: scale(1);
     opacity: 0;
   }
 }
@@ -224,8 +245,9 @@ header {
 .cluster-inner {
   width: 35px;
   height: 35px;
-  background: #007aff;
-  border: 2px solid white;
+  background: var(--primary-color);
+  opacity: 0.7;
+  backdrop-filter: blur(10px);
   border-radius: 50%;
   color: white;
   font-weight: bold;
@@ -238,19 +260,20 @@ header {
   position: absolute;
   width: 55px;
   height: 55px;
-  background: rgba(0, 122, 255, 0.2);
+  background: var(--primary-color);
   border-radius: 50%;
-  animation: cluster-glow 2s infinite;
+  animation: cluster-glow 5s infinite;
 }
+
 @keyframes cluster-glow {
   0%,
   100% {
     transform: scale(0.8);
-    opacity: 0.5;
+    opacity: 0.3;
   }
   50% {
-    transform: scale(1.2);
-    opacity: 0.2;
+    transform: scale(0.5);
+    opacity: 0.1;
   }
 }
 
@@ -300,7 +323,7 @@ header {
 }
 
 .category {
-  color: #ff3b30;
+  color: var(--red-color);
   font-weight: bold;
   font-size: 11px;
   text-transform: uppercase;
@@ -319,12 +342,12 @@ header {
   border-radius: 20px;
   font-size: 13px;
   font-weight: bold;
-  transition: inherit;
+  transition: 0.3s;
 }
 
 .action-btn {
   width: 100%;
-  background: #007aff;
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 14px;
@@ -341,9 +364,16 @@ header {
   cursor: pointer;
 
   text-decoration: none;
+
+  transition: 0.1s;
+}
+
+.action-btn:hover {
+  opacity: 0.8;
 }
 .action-btn:active {
   transform: scale(0.98);
+  opacity: 0.3;
 }
 
 .action-btn-inline {
@@ -353,17 +383,26 @@ header {
   margin: 10px;
 }
 
+.transparent-btn-inline {
+  background: transparent;
+  color: var(--text-color);
+  border: none;
+  cursor: pointer;
+}
+
 .close-btn {
   position: absolute;
   top: 15px;
   right: 15px;
   border: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--background-color);
+  color: var(--text-color);
   width: 32px;
   height: 32px;
   border-radius: 50%;
   z-index: 2001;
   font-weight: bold;
+  cursor: pointer;
 }
 
 .slide-up-enter-active,
@@ -381,6 +420,10 @@ header {
   color: var(--text-color);
 
   transition: inherit;
+}
+
+.action-btn .inline-icon {
+  color: inherit;
 }
 
 .map-tiles {
