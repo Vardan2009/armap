@@ -7,6 +7,13 @@
   </header>
 
   <div ref="mapRef" class="map"></div>
+  <p class="bottom-text">
+    Map Data &copy;
+    <a href="https://www.openstreetmap.org/copyright" target="_blank">
+      OpenStreetMap contributors
+    </a>
+    &copy; <a href="https://carto.com/" target="_blank">CARTO</a>
+  </p>
 
   <Transition name="slide-up">
     <div v-if="selectedPoint" class="story-card">
@@ -148,7 +155,11 @@ body {
   --header-color: rgba(255, 255, 255, 0.5);
 
   --red-color: #ff3b30;
+
   --primary-color: green;
+  --primary-color-lighter: lightgreen;
+
+  --primary-color-text: var(--primary-color);
 
   user-select: none;
 }
@@ -159,6 +170,8 @@ body.dark {
   --background-color-lighter: #2c2c2e;
 
   --header-color: rgba(28, 28, 30, 0.5);
+
+  --primary-color-text: var(--primary-color-lighter);
 }
 
 body,
@@ -437,5 +450,29 @@ body.dark .map-tiles {
 
 .leaflet-container {
   background: var(--background-color);
+}
+
+.bottom-text {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: var(--header-color);
+  padding: 10px;
+  backdrop-filter: blur(20px);
+
+  transition: inherit;
+}
+
+a {
+  color: var(--primary-color-text);
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.9;
+}
+
+a:active {
+  opacity: 0.5;
 }
 </style>
