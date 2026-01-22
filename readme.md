@@ -63,7 +63,7 @@ npm run dev
    Explore the list of available museums and statues, or use the search bar to quickly find a specific place.
 
 2. **Learn about each place**  
-   Tap on a landmark card to view photos and read a short historical description.
+   Tap on a landmark card to view photos and read a simple, short historical description.
 
 3. **Navigate easily**  
    Press the **"Open in Google Maps"** button to get instant directions to the selected location.
