@@ -15,8 +15,8 @@ body {
 
   --red-color: #ff3b30;
 
-  --primary-color: green;
-  --primary-color-lighter: lightgreen;
+  --primary-color: #356cb8;
+  --primary-color-lighter: #5992e3;
 
   --primary-color-text: var(--primary-color);
 
