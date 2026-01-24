@@ -6,6 +6,18 @@
     </nav>
   </header>
 
+  <img 
+    src="https://api.dicebear.com/7.x/avataaars/svg?seed=Narek" 
+    alt="Profile" 
+    class="profile-pfp"
+    @click="isSidebarOpen = true"
+  />
+
+  <TheSidebar 
+    :isOpen="isSidebarOpen" 
+    @close="isSidebarOpen = false" 
+  />
+
   <div ref="mapRef" class="map"></div>
 
   <Transition name="slide-up">
@@ -30,7 +42,7 @@
         <a
           class="action-btn"
           target="_blank"
-          :href="`https://www.google.com/maps/dir/?api=1&destination=${selectedPoint.lat},${selectedPoint.lng}`"
+          :href="`https://www.google.com/maps/search/?api=1&query=${selectedPoint.lat},${selectedPoint.lng}`"
         >
           <MapIcon class="inline-icon" /> Open in Google Maps
         </a>
@@ -40,20 +52,18 @@
 </template>
 
 <script setup>
-import { MapIcon } from "@heroicons/vue/24/solid";
-
-import DarkModeSelector from "./DarkModeSelector.vue";
-
 import { ref, onMounted } from "vue";
+import { MapIcon } from "@heroicons/vue/24/solid";
+import DarkModeSelector from "./DarkModeSelector.vue";
+import TheSidebar from './TheSidebar.vue'; 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-
 import { armenianSites } from "./locations.js";
 
+const isSidebarOpen = ref(false); 
 const mapRef = ref(null);
 const selectedPoint = ref(null);
 let map;
@@ -72,9 +82,7 @@ onMounted(() => {
 
   L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    {
-      className: "map-tiles",
-    },
+    { className: "map-tiles" },
   ).addTo(map);
 
   const clusters = L.markerClusterGroup({
@@ -82,7 +90,6 @@ onMounted(() => {
     zoomToBoundsOnClick: true,
     maxClusterRadius: 25,
     disableClusteringAtZoom: 17,
-
     iconCreateFunction: (cluster) => {
       const count = cluster.getChildCount();
       return L.divIcon({
@@ -104,22 +111,15 @@ onMounted(() => {
 
   armenianSites.forEach((site) => {
     const marker = L.marker([site.lat, site.lng], { icon: createPulseIcon() });
-
     marker.on("click", () => {
       selectedPoint.value = site;
-      map.flyTo([site.lat, site.lng], 15, {
-        animate: true,
-        duration: 1.5,
-      });
-
+      map.flyTo([site.lat, site.lng], 15, { animate: true, duration: 1.5 });
       mapRef.value.classList.add("focused");
     });
-
     clusters.addLayer(marker);
   });
 
   map.addLayer(clusters);
-
   map.on("movestart", () => {
     mapRef.value.classList.remove("focused");
   });
@@ -130,7 +130,25 @@ const close = () => {
   mapRef.value.classList.remove("focused");
 };
 </script>
+
 <style>
-  /* Reference the relative path to your new file */
-  @import "./assets/style.css";
+@import "./assets/style.css";
+
+.profile-pfp {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  cursor: pointer;
+  z-index: 1000; /* Stays above the map */
+  transition: transform 0.2s ease;
+}
+
+.profile-pfp:hover {
+  transform: scale(1.1);
+}
 </style>
