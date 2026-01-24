@@ -6,12 +6,21 @@
     </nav>
   </header>
 
-  <img 
-    src="https://api.dicebear.com/7.x/avataaars/svg?seed=Narek" 
-    alt="Profile" 
-    class="profile-pfp"
-    @click="isSidebarOpen = true"
-  />
+  <button class="profile-trigger" @click="isSidebarOpen = true">
+    <div class="avatar-container">
+      <img 
+        v-if="user" 
+        :src="user.photoURL || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid" 
+        class="trigger-img" 
+        alt="Profile"
+      />
+      <svg v-else xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+    </div>
+    <span v-if="user" class="xp-badge">50 XP</span>
+  </button>
 
   <TheSidebar 
     :isOpen="isSidebarOpen" 
@@ -62,13 +71,21 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { armenianSites } from "./locations.js";
+import { auth } from './firebase'; // Import auth
+import { onAuthStateChanged } from 'firebase/auth'; // Import observer
 
 const isSidebarOpen = ref(false); 
 const mapRef = ref(null);
 const selectedPoint = ref(null);
+const user = ref(null); // Add user state
 let map;
 
 onMounted(() => {
+  // Listen for user changes to update the profile trigger
+  onAuthStateChanged(auth, (currentUser) => {
+    user.value = currentUser;
+  });
+
   map = L.map(mapRef.value, {
     attributionControl: false,
     zoomControl: false,
@@ -134,21 +151,51 @@ const close = () => {
 <style>
 @import "./assets/style.css";
 
-.profile-pfp {
+/* PROFESSIONAL PROFILE TRIGGER */
+.profile-trigger {
   position: fixed;
-  top: 80px;
+  top: 85px; /* Sits below your header */
   left: 20px;
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  background: white;
+  border: none;
+  border-radius: 14px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  z-index: 1000; /* Stays above the map */
-  transition: transform 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
 }
 
-.profile-pfp:hover {
-  transform: scale(1.1);
+.profile-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.avatar-container {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+}
+
+.trigger-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.xp-badge {
+  font-weight: 800;
+  color: #050505;
+  font-size: 13px;
+  letter-spacing: -0.5px;
 }
 </style>
