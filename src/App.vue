@@ -8,27 +8,21 @@
 
   <button class="profile-trigger" @click="isSidebarOpen = true">
     <div class="avatar-container">
-      <img 
-        v-if="user" 
-        :src="user.photoURL || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid" 
-        class="trigger-img" 
+      <img
+        v-if="user"
+        :src="
+          user.photoURL ||
+          'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid
+        "
+        class="trigger-img"
         alt="Profile"
       />
-      <svg v-else xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
+      <UserIcon v-else class="trigger-img" />
     </div>
     <span v-if="user" class="xp-badge">50 XP</span>
   </button>
 
-  <TheSidebar 
-    :isOpen="isSidebarOpen" 
-    @close="isSidebarOpen = false" 
-  />
-
   <div ref="mapRef" class="map"></div>
-
 
   <Transition name="slide-up">
     <div v-if="selectedPoint" class="story-card">
@@ -59,23 +53,25 @@
       </div>
     </div>
   </Transition>
+
+  <TheSidebar :isOpen="isSidebarOpen" @close="isSidebarOpen = false" />
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { MapIcon } from "@heroicons/vue/24/solid";
+import { MapIcon, UserIcon } from "@heroicons/vue/24/solid";
 import DarkModeSelector from "./DarkModeSelector.vue";
-import TheSidebar from './TheSidebar.vue'; 
+import TheSidebar from "./TheSidebar.vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { armenianSites } from "./locations.js";
-import { auth } from './firebase'; // Import auth
-import { onAuthStateChanged } from 'firebase/auth'; // Import observer
+import { auth } from "./firebase"; // Import auth
+import { onAuthStateChanged } from "firebase/auth"; // Import observer
 
-const isSidebarOpen = ref(false); 
+const isSidebarOpen = ref(false);
 const mapRef = ref(null);
 const selectedPoint = ref(null);
 const user = ref(null); // Add user state
@@ -93,14 +89,14 @@ onMounted(() => {
     minZoom: 9,
     maxBounds: L.latLngBounds(
       L.latLng(41.494453696945214, 42.17876797079458),
-      L.latLng(38.75356922991509, 47.77053093866839),
+      L.latLng(38.75356922991509, 47.77053093866839)
     ),
     maxBoundsViscosity: 1,
   }).setView([40.1772, 44.5035], 8);
 
   L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    { className: "map-tiles" },
+    { className: "map-tiles" }
   ).addTo(map);
 
   const clusters = L.markerClusterGroup({
@@ -151,50 +147,47 @@ const close = () => {
 <style>
 @import "./assets/style.css";
 
-/* PROFESSIONAL PROFILE TRIGGER */
 .profile-trigger {
   position: fixed;
-  top: 85px; /* Sits below your header */
+  top: 85px;
   left: 20px;
-  background: white;
+  background: var(--header-color);
+  backdrop-filter: blur(20px);
   border: none;
-  border-radius: 14px;
+  border-radius: 5px;
   padding: 6px 10px;
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
   z-index: 1000;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  transition: all 0.2s ease;
+  transition: inherit;
 }
 
 .profile-trigger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  transform: translateX(2px);
 }
 
 .avatar-container {
   width: 35px;
   height: 35px;
-  border-radius: 50%;
+  border-radius: 5px;
   overflow: hidden;
-  background: #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #555;
 }
 
 .trigger-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  color: var(--text-color);
 }
 
 .xp-badge {
   font-weight: 800;
-  color: #050505;
+  color: var(--text-color);
   font-size: 13px;
   letter-spacing: -0.5px;
 }
