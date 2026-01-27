@@ -22,9 +22,9 @@ ArMap is a web application designed to help users explore the cultural heritage 
 | Main List | Place Info | Navigation |
 | :---: | :---: | :---: |
 | <img src="./screenshots/list-view.png" width="200" alt="Main List" /> | <img src="./screenshots/details-view.png" width="200" alt="Place Details" /> | <img src="./screenshots/maps-view.png" width="200" alt="Google Maps" /> |
- -->
 
 ---
+ -->
 
 ## Tech Stack
 

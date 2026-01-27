@@ -156,8 +156,8 @@ export const armenianSites = [
   {
     id: 14,
     name: "Sevanavank",
-    lat: 40.5639,
-    lng: 44.9868,
+    lat: 40.56386844277414,
+    lng: 45.010765816081744,
     category: "UNESCO",
     province: "Gegharkunik",
     description:
@@ -204,8 +204,8 @@ export const armenianSites = [
   {
     id: 18,
     name: "Goshavank",
-    lat: 40.73,
-    lng: 44.9972,
+    lat: 40.729686307628135,
+    lng: 44.9973324707605,
     category: "Historical",
     province: "Tavush",
     description:
@@ -251,8 +251,8 @@ export const armenianSites = [
   {
     id: 22,
     name: "Kecharis Monastery",
-    lat: 40.5336,
-    lng: 44.7067,
+    lat: 40.53386695279308,
+    lng: 44.71620596271457,
     category: "Historical",
     province: "Kotayk",
     description:
@@ -405,8 +405,8 @@ export const armenianSites = [
   {
     id: 36,
     name: "Mastara Church",
-    lat: 40.4556,
-    lng: 43.8867,
+    lat: 40.45177315568004,
+    lng: 43.88399099363554,
     category: "Historical",
     province: "Aragatsotn",
     description:
@@ -521,8 +521,8 @@ export const armenianSites = [
   {
     id: 46,
     name: "Bjni Fortress",
-    lat: 40.4594,
-    lng: 44.6517,
+    lat: 40.460561755915336,
+    lng: 44.65370793221571,
     category: "Historical",
     province: "Kotayk",
     description:
