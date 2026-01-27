@@ -8,10 +8,25 @@
 
   <button class="profile-trigger" @click="isSidebarOpen = true">
     <div class="avatar-container">
-      <img v-if="user" :src="user.photoURL || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid" class="trigger-img" />
+      <img
+        v-if="user"
+        :src="
+          user.photoURL ||
+          'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid
+        "
+        class="trigger-img"
+      />
       <UserIcon v-else class="trigger-img" />
     </div>
     <span v-if="user" class="xp-badge">{{ userXP }} XP</span>
+  </button>
+
+  <button
+    v-if="userLocation"
+    class="move-view-to-location"
+    @click="moveViewToLocation"
+  >
+    📍 Where am I?
   </button>
 
   <div ref="mapRef" class="map"></div>
@@ -27,39 +42,53 @@
         <span class="category">{{ selectedPoint.category }}</span>
         <h2>{{ selectedPoint.name }}</h2>
         <p>{{ selectedPoint.description }}</p>
-        <div v-if="userLocation" class="distance-info">
-          📍 {{ formatDistance(calculateLiveDistance) }} away
-        </div>
         <div class="stats">
           <div class="stat-item">🏆 50 XP</div>
-          <div class="stat-item">🇦🇲 Heritage</div>
+          <div class="stat-item">
+            📍 {{ formatDistance(calculateLiveDistance) }} away
+          </div>
         </div>
         <div class="button-group">
-        <a class="action-btn" target="_blank" :href="`https://www.google.com/maps/search/?api=1&query=${selectedPoint.lat},${selectedPoint.lng}`">
-          <MapIcon class="inline-icon" /> Maps
-        </a>
+          <a
+            class="action-btn"
+            target="_blank"
+            :href="`https://www.google.com/maps/search/?api=1&query=${selectedPoint.lat},${selectedPoint.lng}`"
+          >
+            <MapIcon class="inline-icon" /> Maps
+          </a>
 
-        <button 
-          v-if="!visitedIds.includes(selectedPoint.id)" 
-          @click="awardXP(50)" 
-          class="checkin-btn"
-        >
-          Claim 50 XP
-        </button>
-        
-        <button v-else class="checkin-btn visited" disabled>
-          Visited ✅
-        </button>
-      </div>
+          <button
+            v-if="!visitedIds.includes(selectedPoint.id)"
+            @click="awardXP(50)"
+            class="checkin-btn"
+            :disabled="userLocation === null || xpLoading"
+          >
+            <template v-if="userLocation === null || xpLoading">
+              Please wait...
+            </template>
+            <template v-else> Claim 50 XP </template>
+          </button>
+
+          <button v-else class="checkin-btn visited" disabled>
+            Visited ✅
+          </button>
+        </div>
       </div>
     </div>
   </Transition>
 
-  <TheSidebar :isOpen="isSidebarOpen" :userXP="userXP" :user="user" @close="isSidebarOpen = false" />
+  <TheSidebar
+    :isOpen="isSidebarOpen"
+    :userXP="userXP"
+    :user="user"
+    :visitedCount="visitedIds.length"
+    @close="isSidebarOpen = false"
+  />
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from "vue"; // Add computed hereimport { MapIcon, UserIcon } from "@heroicons/vue/24/solid";
+import { ref, onMounted, watch, computed } from "vue";
+import { MapIcon, UserIcon } from "@heroicons/vue/24/solid";
 import DarkModeSelector from "./DarkModeSelector.vue";
 import TheSidebar from "./TheSidebar.vue";
 import L from "leaflet";
@@ -75,20 +104,30 @@ const mapRef = ref(null);
 const selectedPoint = ref(null);
 const user = ref(null);
 const userXP = ref(0);
-const visitedIds = ref([]); 
+const visitedIds = ref([]);
 const userLocation = ref(null);
 let map;
 let clusterGroup; // Top-level variable
 
+let userMarker = L.circleMarker([0, 0], {
+  radius: 3,
+  className: "user-marker",
+});
+
+const xpLoading = ref(false);
+
 const getDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; 
+  return R * c;
 };
 
 const renderMarkers = () => {
@@ -97,17 +136,18 @@ const renderMarkers = () => {
 
   armenianSites.forEach((site) => {
     const isVisited = visitedIds.value.includes(site.id);
-    
-    const marker = L.marker([site.lat, site.lng], { 
+
+    const marker = L.marker([site.lat, site.lng], {
       icon: L.divIcon({
-        className: `pulse-marker ${isVisited ? 'is-visited' : ''}`,
+        className: `pulse-marker ${isVisited ? "is-visited" : ""}`,
         html: `<div class="pulse-ring"></div><div class="pulse-core"></div>`,
         iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      })
+        iconAnchor: [10, 10],
+      }),
     });
 
     marker.on("click", () => {
+      if (xpLoading.value) return;
       selectedPoint.value = site;
       map.flyTo([site.lat, site.lng], 15, { animate: true });
       mapRef.value.classList.add("focused");
@@ -121,7 +161,7 @@ onMounted(() => {
   onAuthStateChanged(auth, (currentUser) => {
     user.value = currentUser;
     if (currentUser) {
-      onValue(dbRef(db, 'users/' + currentUser.uid), (snapshot) => {
+      onValue(dbRef(db, "users/" + currentUser.uid), (snapshot) => {
         const data = snapshot.val();
         if (data) {
           userXP.value = data.xp || 0;
@@ -131,19 +171,33 @@ onMounted(() => {
     }
   });
 
-
   navigator.geolocation.watchPosition((position) => {
     userLocation.value = {
       lat: position.coords.latitude,
-      lng: position.coords.longitude
+      lng: position.coords.longitude,
     };
   });
 
-  map = L.map(mapRef.value, { attributionControl: false, zoomControl: false }).setView([40.1772, 44.5035], 8);
+  map = L.map(mapRef.value, {
+    attributionControl: false,
+    zoomControl: false,
+    maxBounds: [
+      [38.7696, 43.4196],
+      [41.3011, 46.6282],
+    ],
+    maxBoundsViscosity: 1,
+    zoomSnap: 0.5,
+    minZoom: 10,
+  }).setView([40.1772, 44.5035], 8);
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { 
-    className: "map-tiles" 
-  }).addTo(map);
+  userMarker.addTo(map);
+
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    {
+      className: "map-tiles",
+    }
+  ).addTo(map);
 
   clusterGroup = L.markerClusterGroup({
     maxClusterRadius: 40,
@@ -151,47 +205,84 @@ onMounted(() => {
     zoomToBoundsOnClick: true,
     iconCreateFunction: (cluster) => {
       const count = cluster.getChildCount();
+
       return L.divIcon({
         html: `<div class="snap-cluster-container"><div class="snap-cluster-ring"></div><div class="snap-cluster-core"><span>${count}</span></div></div>`,
-        className: 'custom-cluster',
-        iconSize: L.point(40, 40)
+        className: "custom-cluster",
+        iconSize: L.point(40, 40),
       });
-    }
+    },
   });
 
   map.addLayer(clusterGroup);
 
-  watch(visitedIds, () => {
-    renderMarkers();
-  }, { immediate: true });
+  watch(
+    visitedIds,
+    () => {
+      renderMarkers();
+    },
+    { immediate: true }
+  );
+
+  watch(
+    userLocation,
+    (newLocation) => {
+      if (!newLocation) return;
+
+      userMarker.setLatLng([newLocation.lat, newLocation.lng]);
+    },
+    { immediate: true }
+  );
 
   map.on("movestart", () => mapRef.value.classList.remove("focused"));
 });
 
+const moveViewToLocation = () => {
+  if (!userLocation.value || !map) return;
+  map.flyTo([userLocation.value.lat, userLocation.value.lng], 15, {
+    animate: true,
+  });
+  mapRef.value.classList.add("focused");
+};
+
 const awardXP = (amount) => {
+  if (xpLoading.value) return;
+  xpLoading.value = true;
   if (!user.value) return alert("Please login first!");
   if (!selectedPoint.value) return;
 
-  navigator.geolocation.getCurrentPosition((position) => {
-    const dist = getDistance(position.coords.latitude, position.coords.longitude, selectedPoint.value.lat, selectedPoint.value.lng);
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const dist = getDistance(
+        position.coords.latitude,
+        position.coords.longitude,
+        selectedPoint.value.lat,
+        selectedPoint.value.lng
+      );
 
-    if (dist > 500) {
-      alert(`Too far! You are ${Math.round(dist)}m away. Move closer!`);
-      return;
+      if (dist > 500) {
+        alert(`Too far! You are ${Math.round(dist)}m away. Move closer!`);
+        xpLoading.value = false;
+
+        return;
+      }
+
+      if (visitedIds.value.includes(selectedPoint.value.id)) return;
+
+      const newVisited = [...visitedIds.value, selectedPoint.value.id];
+
+      set(dbRef(db, "users/" + user.value.uid), {
+        xp: (userXP.value || 0) + amount,
+        email: user.value.email,
+        visitedIds: newVisited,
+      });
+      xpLoading.value = false;
+    },
+    () => {
+      alert("Location access denied!");
+      xpLoading.value = false;
     }
-
-    if (visitedIds.value.includes(selectedPoint.value.id)) return;
-
-    const newVisited = [...visitedIds.value, selectedPoint.value.id];
-    
-    set(dbRef(db, 'users/' + user.value.uid), {
-      xp: (userXP.value || 0) + amount,
-      email: user.value.email,
-      visitedIds: newVisited
-    });
-  }, () => {
-    alert("Location access denied!");
-  });
+  );
 };
 
 const close = () => {

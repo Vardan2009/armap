@@ -33,17 +33,44 @@
             <h2>Join ArMap</h2>
             <p>Login to save your heritage discoveries and earn XP.</p>
           </div>
-          <input v-model="email" type="email" placeholder="Email" class="auth-input" :disabled="isLoading" />
-          <input v-model="password" type="password" placeholder="Password" class="auth-input" :disabled="isLoading" />
-          <button @click="handleLogin" class="auth-btn" :disabled="isLoading">
+          <input
+            v-model="email"
+            type="email"
+            placeholder="Email"
+            class="auth-input"
+            :disabled="isLoading"
+          />
+          <input
+            v-model="password"
+            type="password"
+            placeholder="Password"
+            class="auth-input"
+            :disabled="isLoading"
+          />
+          <button
+            @click="handleLogin"
+            class="action-btn auth-btn"
+            :disabled="isLoading"
+          >
             {{ isLoading ? "Logging in..." : "Login" }}
           </button>
-          <button @click="handleRegister" class="auth-btn secondary-style" :disabled="isLoading">
+          <button
+            @click="handleRegister"
+            class="action-btn secondary-style auth-btn"
+            :disabled="isLoading"
+          >
             Create Account
           </button>
-          <div class="or-divider"><span>OR</span></div>  
-          <button @click="handleGoogleLogin" class="google-btn" :disabled="isLoading">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" />
+          <div class="or-divider"><span>OR</span></div>
+          <button
+            @click="handleGoogleLogin"
+            class="google-btn"
+            :disabled="isLoading"
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              width="18"
+            />
             Sign in with Google
           </button>
         </div>
@@ -65,6 +92,15 @@
             </div>
           </div>
 
+          <button
+            @click="handleLogout"
+            class="action-btn logout-btn"
+            :disabled="isLoading"
+          >
+            <KeyIcon class="inline-icon" />
+            {{ isLoading ? "Logging out..." : "Log out" }}
+          </button>
+
           <div class="stats-grid">
             <div class="stat-card">
               <span class="stat-value">🏆 {{ userXP }}</span>
@@ -79,9 +115,9 @@
           <div class="leaderboard-section">
             <h3 class="section-title">Global Leaderboard</h3>
             <div class="leaderboard-list">
-              <div 
-                v-for="(player, index) in topTen" 
-                :key="player.uid" 
+              <div
+                v-for="(player, index) in topTen"
+                :key="player.uid"
                 :class="['leader-item', { 'is-me': player.uid === user.uid }]"
               >
                 <span class="rank">#{{ index + 1 }}</span>
@@ -99,10 +135,6 @@
               </template>
             </div>
           </div>
-
-          <button @click="handleLogout" class="logout-btn">
-            Logout
-          </button>
         </div>
 
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -112,14 +144,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { auth, db } from './firebase'; 
+import { ref, onMounted, computed } from "vue";
+import { auth, db } from "./firebase";
 import { ref as dbRef, onValue } from "firebase/database";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
+import { KeyIcon } from "@heroicons/vue/24/solid";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
@@ -128,28 +160,26 @@ const props = defineProps({
   isOpen: Boolean,
   userXP: Number,
   visitedCount: Number,
-  user: Object
+  user: Object,
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(["close"]);
 
-const email = ref('');
-const password = ref('');
-const errorMessage = ref('');
+const email = ref("");
+const password = ref("");
+const errorMessage = ref("");
 const isLoading = ref(false);
 const allUsers = ref([]);
 
-// Fetch all users to calculate ranks
 onMounted(() => {
-  const usersRef = dbRef(db, 'users');
+  const usersRef = dbRef(db, "users");
   onValue(usersRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      // Convert object to array and sort by XP
       const list = Object.entries(data).map(([uid, values]) => ({
         uid,
-        displayName: values.displayName || values.email.split('@')[0],
-        xp: values.xp || 0
+        displayName: values.displayName || values.email.split("@")[0],
+        xp: values.xp || 0,
       }));
       allUsers.value = list.sort((a, b) => b.xp - a.xp);
     }
@@ -160,7 +190,7 @@ const topTen = computed(() => allUsers.value.slice(0, 10));
 
 const userRank = computed(() => {
   if (!props.user) return 0;
-  return allUsers.value.findIndex(u => u.uid === props.user.uid) + 1;
+  return allUsers.value.findIndex((u) => u.uid === props.user.uid) + 1;
 });
 
 const handleLogin = async () => {
@@ -198,25 +228,39 @@ const handleRegister = async () => {
 };
 
 const handleGoogleLogin = async () => {
+  isLoading.value = true;
   const provider = new GoogleAuthProvider();
   try {
     await signInWithPopup(auth, provider);
     errorMessage.value = "";
-    // No need to emit close here, let them see their new profile!
   } catch (err) {
     errorMessage.value = "Google login failed.";
+  } finally {
+    isLoading.value = false;
   }
 };
 
-const handleLogout = () => signOut(auth);
+const handleLogout = () => {
+  isLoading.value = true;
+  signOut(auth)
+    .then(() => {
+      errorMessage.value = "";
+    })
+    .catch(() => {
+      errorMessage.value = "Logout failed.";
+    })
+    .finally(() => {
+      isLoading.value = false;
+    });
+};
 </script>
 
 <style scoped>
 .side-sheet {
   position: fixed;
   top: 0;
-  left: -350px;
-  width: 350px;
+  left: -450px;
+  width: 450px;
   height: 100%;
   background: var(--background-color);
   color: var(--text-color);
@@ -228,6 +272,12 @@ const handleLogout = () => signOut(auth);
 }
 .side-sheet.is-open {
   left: 0;
+}
+
+@media screen and (max-width: 500px) {
+  .side-sheet.is-open {
+    width: 100% !important;
+  }
 }
 
 .header-section {
@@ -328,20 +378,19 @@ const handleLogout = () => signOut(auth);
 
 .auth-btn {
   width: 100%;
-  padding: 14px;
-  background: #050505;
+  padding: 12px;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 5px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .secondary-style {
-  background: transparent;
+  background: var(--background-color-lighter);
   color: var(--text-color);
-  border: 1px solid var(--text-color);
 }
 
 .google-btn {
@@ -360,13 +409,18 @@ const handleLogout = () => signOut(auth);
   margin-bottom: 10px;
 }
 
+.google-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .logout-btn {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 8px;
-  margin-top: 40px;
-  color: #ff4d4d;
-  background: none;
+  margin-top: 20px;
+  background: var(--red-color);
   border: none;
   font-weight: 600;
   cursor: pointer;
@@ -420,7 +474,7 @@ const handleLogout = () => signOut(auth);
 .leaderboard-section {
   margin-top: 25px;
   background: #f9f9f9;
-  border-radius: 16px;
+  border-radius: 5px;
   padding: 16px;
   border: 1px solid #f0f0f0;
 }
@@ -445,7 +499,7 @@ const handleLogout = () => signOut(auth);
   align-items: center;
   padding: 8px 12px;
   background: white;
-  border-radius: 10px;
+  border-radius: 5px;
   font-size: 14px;
   border: 1px solid transparent;
 }
@@ -453,6 +507,13 @@ const handleLogout = () => signOut(auth);
 .leader-item.is-me {
   border-color: var(--primary-color);
   background: rgba(53, 108, 184, 0.05);
+}
+
+.leader-item.is-me::after {
+  content: "(You)";
+  font-size: 12px;
+  color: var(--primary-color);
+  margin-left: 4px;
 }
 
 .rank {
