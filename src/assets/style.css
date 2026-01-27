@@ -10,16 +10,14 @@ body {
   --background-color: #fefefe;
   --text-color: #1c1c1e;
   --background-color-lighter: #ffffff;
-
   --header-color: rgba(255, 255, 255, 0.5);
-
   --red-color: #ff3b30;
-
   --primary-color: #356cb8;
   --primary-color-lighter: #5992e3;
-
   --primary-color-text: var(--primary-color);
-
+  --blue-color: #30ffe3; /* The bright teal/blue from your code */
+  --snap-green: #2ecc71;
+  --snap-green-pulse: rgba(46, 204, 113, 0.4);
   user-select: none;
 }
 
@@ -27,28 +25,20 @@ body.dark {
   --background-color: #1c1c1e;
   --text-color: #fefefe;
   --background-color-lighter: #2c2c2e;
-
   --header-color: rgba(28, 28, 30, 0.5);
-
   --primary-color-text: var(--primary-color-lighter);
 }
 
-body,
-html,
-#app {
-  margin: 0;
-  padding: 0;
+body, html, #app {
   height: 100%;
   font-family: "Google Sans", sans-serif;
   overflow: hidden;
-
   background: var(--background-color);
-
   color: var(--text-color);
-
   transition: 0.3s;
 }
 
+/* --- UI Layout --- */
 header {
   width: 100%;
   height: 60px;
@@ -61,99 +51,106 @@ header {
   background: var(--header-color);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-
   transition: inherit;
 }
 
+.profile-trigger {
+  position: fixed;
+  top: 85px;
+  left: 20px;
+  background: var(--header-color);
+  backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 5px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: inherit;
+}
+
+.profile-trigger:hover { transform: translateX(2px); }
+
+.avatar-container {
+  width: 35px;
+  height: 35px;
+  border-radius: 5px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trigger-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  color: var(--text-color);
+}
+
+.xp-badge {
+  font-weight: 800;
+  color: var(--text-color);
+  font-size: 13px;
+  letter-spacing: -0.5px;
+}
+
+/* --- Map & Markers --- */
 .map {
   height: 100%;
   width: 100%;
   position: absolute;
   z-index: 0;
-
   transition: 1s;
 }
 
-.map.focused {
-  transform: translateY(-100px) scale(2);
-}
+.map.focused { transform: translateY(-100px) scale(2); }
 
-.pulse-marker {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.pulse-core {
-  width: 12px;
-  height: 12px;
-  background: #ff3b30;
-  border-radius: 50%;
-  z-index: 10;
-}
+.pulse-marker { display: flex; justify-content: center; align-items: center; }
+.pulse-core { width: 12px; height: 12px; background: #ff3b30; border-radius: 50%; z-index: 10; }
 .pulse-ring {
   position: absolute;
-  width: 35px;
-  height: 35px;
+  width: 35px; height: 35px;
   background: rgba(255, 59, 48, 0.4);
   border-radius: 50%;
   animation: pulse-animation 3s infinite;
 }
+
 @keyframes pulse-animation {
-  0% {
-    transform: scale(0.4);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
 }
 
-.custom-cluster-marker {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+.custom-cluster-marker { display: flex; justify-content: center; align-items: center; }
 .cluster-inner {
-  width: 35px;
-  height: 35px;
+  width: 35px; height: 35px;
   background: var(--primary-color);
   opacity: 0.7;
   backdrop-filter: blur(10px);
   border-radius: 50%;
-  color: white;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: white; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
   z-index: 10;
 }
 .cluster-pulse {
   position: absolute;
-  width: 55px;
-  height: 55px;
+  width: 55px; height: 55px;
   background: var(--primary-color);
   border-radius: 50%;
   animation: cluster-glow 5s infinite;
 }
 
 @keyframes cluster-glow {
-  0%,
-  100% {
-    transform: scale(0.8);
-    opacity: 0.3;
-  }
-  50% {
-    transform: scale(0.5);
-    opacity: 0.1;
-  }
+  0%, 100% { transform: scale(0.8); opacity: 0.3; }
+  50% { transform: scale(0.5); opacity: 0.1; }
 }
 
+/* --- Story Card --- */
 .story-card {
   position: absolute;
-  bottom: 20px;
-  left: 15px;
-  right: 15px;
+  bottom: 20px; left: 15px; right: 15px;
   background: var(--background-color-lighter);
   z-index: 2000;
   border-radius: 28px;
@@ -161,7 +158,6 @@ header {
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
   max-width: 500px;
   margin: 0 auto;
-
   transition: inherit;
 }
 
@@ -175,39 +171,17 @@ header {
   background: #f0f0f2;
 }
 
-.location-image {
-  width: 100%;
-  height: 100%;
-  object-position: center;
-  display: block;
-}
-
-.location-image[src=""] {
-  visibility: hidden;
-}
+.location-image { width: 100%; height: 100%; object-position: center; display: block; }
+.location-image[src=""] { visibility: hidden; }
 
 .image-gradient {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 50%;
+  position: absolute; bottom: 0; width: 100%; height: 50%;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent);
 }
 
-.category {
-  color: var(--red-color);
-  font-weight: bold;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
+.category { color: var(--red-color); font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 
-.stats {
-  display: flex;
-  gap: 10px;
-  margin: 15px 0;
-  transition: inherit;
-}
+.stats { display: flex; gap: 10px; margin: 15px 0; transition: inherit; }
 .stat-item {
   background: var(--background-color);
   padding: 6px 14px;
@@ -217,120 +191,145 @@ header {
   transition: 0.3s;
 }
 
-.action-btn {
-  width: 100%;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 5px;
-  font-weight: bold;
-  font-size: 16px;
-  transition: transform 0.2s;
-
+/* --- Buttons --- */
+.button-group {
   display: flex;
-  justify-content: center;
   gap: 10px;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.action-btn, .checkin-btn {
+  flex: 1;
+  display: flex;
   align-items: center;
-
-  cursor: pointer;
-
-  text-decoration: none;
-
-  transition: 0.1s;
-}
-
-.action-btn:hover {
-  opacity: 0.8;
-}
-.action-btn:active {
-  transform: scale(0.98);
-  opacity: 0.3;
-}
-
-.action-btn-inline {
-  width: auto;
-  padding: 10px 12px;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 15px;
+  border-radius: 8px;
+  font-weight: bold;
   font-size: 14px;
-  margin: 10px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s, opacity 0.1s;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.transparent-btn-inline {
-  background: transparent;
-  color: var(--text-color);
-  border: none;
-  cursor: pointer;
-}
+.action-btn { background: var(--primary-color); color: white; }
+.checkin-btn { background: var(--text-color); color: var(--background-color); }
+
+.action-btn:hover { opacity: 0.8; }
+.action-btn:active, .checkin-btn:active { transform: scale(0.97); opacity: 0.8; }
+
+.action-btn .inline-icon { color: white; height: 18px; }
+
+.transparent-btn-inline { background: transparent; color: var(--text-color); border: none; cursor: pointer; }
 
 .close-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  border: none;
-  background: var(--background-color);
-  color: var(--text-color);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  z-index: 2001;
-  font-weight: bold;
-  cursor: pointer;
+  position: absolute; top: 15px; right: 15px;
+  border: none; background: var(--background-color); color: var(--text-color);
+  width: 32px; height: 32px; border-radius: 50%;
+  z-index: 2001; font-weight: bold; cursor: pointer;
 }
 
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(110%);
-  opacity: 0;
-}
+/* --- Utility & Misc --- */
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1); }
+.slide-up-enter-from, .slide-up-leave-to { transform: translateY(110%); opacity: 0; }
 
-.inline-icon {
-  height: 20px;
-  color: var(--text-color);
+.inline-icon { height: 20px; color: var(--text-color); transition: inherit; }
 
-  transition: inherit;
-}
+.map-tiles { transition: filter 0.3s; }
+body.dark .map-tiles { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); }
 
-.action-btn .inline-icon {
-  color: inherit;
-}
-
-.map-tiles {
-  transition: filter 0.3s;
-}
-
-body.dark .map-tiles {
-  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3)
-    brightness(0.7);
-}
-
-.leaflet-container {
-  background: var(--background-color);
-}
+.leaflet-container { background: var(--background-color); }
 
 .bottom-text {
+  position: absolute; bottom: 5px; right: 5px;
+  background: var(--header-color); padding: 10px;
+  backdrop-filter: blur(20px); transition: inherit;
+}
+
+a { color: var(--primary-color-text); text-decoration: none; }
+a:hover { opacity: 0.9; }
+a:active { opacity: 0.5; }
+
+/* Container positioning */
+.snap-cluster-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+}
+
+/* The solid center of the cluster */
+.snap-cluster-core {
+  width: 30px;
+  height: 30px;
+  background: var(--red-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  color: white; 
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 0 10px var(--red-color);
+}
+
+/* The animated pulse ring for clusters */
+.snap-cluster-ring {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
-  background: var(--header-color);
-  padding: 10px;
-  backdrop-filter: blur(20px);
-
-  transition: inherit;
+  width: 50px;
+  height: 50px;
+  background: var(--red-color);
+  opacity: 0.3;  border-radius: 50%;
+  animation: pulse-animation 3s infinite;
 }
 
-a {
-  color: var(--primary-color-text);
-  text-decoration: none;
+.custom-cluster {
+  background: transparent !important;
+  border: none !important;
 }
 
-a:hover {
-  opacity: 0.9;
+/* Extra safety: Force remove any remaining Leaflet lines */
+.leaflet-marker-cluster-lines {
+  display: none !important;
+}
+/* style.css */
+.checkin-btn.visited {
+  background: #e0e0e0;
+  color: #8e8e93;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-a:active {
-  opacity: 0.5;
+body.dark .checkin-btn.visited {
+  background: #3a3a3c;
+  color: #98989d;
+}
+
+.pulse-core { background: var(--red-color); }
+.pulse-ring { background: rgba(255, 59, 48, 0.4); }
+
+/* Visited Green State */
+.is-visited .pulse-core {
+  background: var(--snap-green) !important;
+  box-shadow: 0 0 10px var(--snap-green);
+}
+
+.is-visited .pulse-ring {
+  background: var(--snap-green-pulse) !important;
+}
+.distance-info {
+  margin-top: 10px;
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }

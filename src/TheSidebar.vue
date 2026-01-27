@@ -92,7 +92,12 @@ import {
   signInWithPopup 
 } from "firebase/auth";
 
-defineProps(['isOpen']);
+const props = defineProps({
+  isOpen: Boolean,
+  userXP: Number,
+  visitedCount: Number,
+  user: Object });
+
 const emit = defineEmits(['close']);
 
 const email = ref('');
@@ -101,8 +106,8 @@ const user = ref(null);
 const errorMessage = ref('');
 const isLoading = ref(false);
 
-const userXP = ref(50);
-const visitedCount = ref(0);
+// Note: userXP and visitedCount are now handled by props! 
+// No need for local refs here.
 
 onMounted(() => {
   onAuthStateChanged(auth, (currentUser) => {
@@ -149,8 +154,9 @@ const handleGoogleLogin = async () => {
   try {
     await signInWithPopup(auth, provider);
     errorMessage.value = "";
+    // No need to emit close here, let them see their new profile!
   } catch (err) {
-    errorMessage.value = "Google login failed. Pop-up blocked or cancelled.";
+    errorMessage.value = "Google login failed.";
   }
 };
 

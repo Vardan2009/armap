@@ -1,6 +1,6 @@
 <template>
   <header>
-    <h1 style="font-style: italic">ArMap</h1>
+    <h1 class="logo">ArMap</h1>
     <nav>
       <DarkModeSelector />
     </nav>
@@ -8,194 +8,213 @@
 
   <button class="profile-trigger" @click="isSidebarOpen = true">
     <div class="avatar-container">
-      <img 
-        v-if="user" 
-        :src="user.photoURL || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid" 
-        class="trigger-img" 
-        alt="Profile"
-      />
-      <svg v-else xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
+      <img v-if="user" :src="user.photoURL || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + user.uid" class="trigger-img" />
+      <UserIcon v-else class="trigger-img" />
     </div>
-    <span v-if="user" class="xp-badge">50 XP</span>
+    <span v-if="user" class="xp-badge">{{ userXP }} XP</span>
   </button>
 
-  <TheSidebar 
-    :isOpen="isSidebarOpen" 
-    @close="isSidebarOpen = false" 
-  />
-
   <div ref="mapRef" class="map"></div>
-
 
   <Transition name="slide-up">
     <div v-if="selectedPoint" class="story-card">
       <button @click="close" class="close-btn">✕</button>
-
       <div class="card-image-container">
         <img :src="selectedPoint.image" class="location-image" />
         <div class="image-gradient"></div>
       </div>
-
       <div class="card-content">
         <span class="category">{{ selectedPoint.category }}</span>
         <h2>{{ selectedPoint.name }}</h2>
         <p>{{ selectedPoint.description }}</p>
-
+        <div v-if="userLocation" class="distance-info">
+          📍 {{ formatDistance(calculateLiveDistance) }} away
+        </div>
         <div class="stats">
           <div class="stat-item">🏆 50 XP</div>
-          <div class="stat-item">🇦🇲 Heritage Site</div>
+          <div class="stat-item">🇦🇲 Heritage</div>
         </div>
-
-        <a
-          class="action-btn"
-          target="_blank"
-          :href="`https://www.google.com/maps/search/?api=1&query=${selectedPoint.lat},${selectedPoint.lng}`"
-        >
-          <MapIcon class="inline-icon" /> Open in Google Maps
+        <div class="button-group">
+        <a class="action-btn" target="_blank" :href="`https://www.google.com/maps/search/?api=1&query=${selectedPoint.lat},${selectedPoint.lng}`">
+          <MapIcon class="inline-icon" /> Maps
         </a>
+
+        <button 
+          v-if="!visitedIds.includes(selectedPoint.id)" 
+          @click="awardXP(50)" 
+          class="checkin-btn"
+        >
+          Claim 50 XP
+        </button>
+        
+        <button v-else class="checkin-btn visited" disabled>
+          Visited ✅
+        </button>
+      </div>
       </div>
     </div>
   </Transition>
+
+  <TheSidebar :isOpen="isSidebarOpen" :userXP="userXP" :user="user" @close="isSidebarOpen = false" />
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { MapIcon } from "@heroicons/vue/24/solid";
+import { ref, onMounted, watch, computed } from "vue"; // Add computed hereimport { MapIcon, UserIcon } from "@heroicons/vue/24/solid";
 import DarkModeSelector from "./DarkModeSelector.vue";
-import TheSidebar from './TheSidebar.vue'; 
+import TheSidebar from "./TheSidebar.vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { armenianSites } from "./locations.js";
-import { auth } from './firebase'; // Import auth
-import { onAuthStateChanged } from 'firebase/auth'; // Import observer
+import { auth, db } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref as dbRef, set, onValue } from "firebase/database";
 
-const isSidebarOpen = ref(false); 
+const isSidebarOpen = ref(false);
 const mapRef = ref(null);
 const selectedPoint = ref(null);
-const user = ref(null); // Add user state
+const user = ref(null);
+const userXP = ref(0);
+const visitedIds = ref([]); 
+const userLocation = ref(null);
 let map;
+let clusterGroup; // Top-level variable
+
+const getDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; 
+};
+
+const renderMarkers = () => {
+  if (!clusterGroup || !map) return;
+  clusterGroup.clearLayers();
+
+  armenianSites.forEach((site) => {
+    const isVisited = visitedIds.value.includes(site.id);
+    
+    const marker = L.marker([site.lat, site.lng], { 
+      icon: L.divIcon({
+        className: `pulse-marker ${isVisited ? 'is-visited' : ''}`,
+        html: `<div class="pulse-ring"></div><div class="pulse-core"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      })
+    });
+
+    marker.on("click", () => {
+      selectedPoint.value = site;
+      map.flyTo([site.lat, site.lng], 15, { animate: true });
+      mapRef.value.classList.add("focused");
+    });
+
+    clusterGroup.addLayer(marker);
+  });
+};
 
 onMounted(() => {
-  // Listen for user changes to update the profile trigger
   onAuthStateChanged(auth, (currentUser) => {
     user.value = currentUser;
+    if (currentUser) {
+      onValue(dbRef(db, 'users/' + currentUser.uid), (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          userXP.value = data.xp || 0;
+          visitedIds.value = data.visitedIds || [];
+        }
+      });
+    }
   });
 
-  map = L.map(mapRef.value, {
-    attributionControl: false,
-    zoomControl: false,
-    minZoom: 9,
-    maxBounds: L.latLngBounds(
-      L.latLng(41.494453696945214, 42.17876797079458),
-      L.latLng(38.75356922991509, 47.77053093866839),
-    ),
-    maxBoundsViscosity: 1,
-  }).setView([40.1772, 44.5035], 8);
+  navigator.geolocation.watchPosition((position) => {
+    userLocation.value = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude
+    };
+  });
 
-  L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    { className: "map-tiles" },
-  ).addTo(map);
+  map = L.map(mapRef.value, { attributionControl: false, zoomControl: false }).setView([40.1772, 44.5035], 8);
 
-  const clusters = L.markerClusterGroup({
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { 
+    className: "map-tiles" 
+  }).addTo(map);
+
+  clusterGroup = L.markerClusterGroup({
+    maxClusterRadius: 40,
     showCoverageOnHover: false,
     zoomToBoundsOnClick: true,
-    maxClusterRadius: 25,
-    disableClusteringAtZoom: 17,
     iconCreateFunction: (cluster) => {
       const count = cluster.getChildCount();
       return L.divIcon({
-        html: `<div class="cluster-pulse"></div><div class="cluster-inner"><span>${count}</span></div>`,
-        className: "custom-cluster-marker",
-        iconSize: L.point(40, 40),
+        html: `<div class="snap-cluster-container"><div class="snap-cluster-ring"></div><div class="snap-cluster-core"><span>${count}</span></div></div>`,
+        className: 'custom-cluster',
+        iconSize: L.point(40, 40)
       });
-    },
+    }
   });
 
-  const createPulseIcon = () => {
-    return L.divIcon({
-      className: "pulse-marker",
-      html: `<div class="pulse-ring"></div><div class="pulse-core"></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-  };
+  map.addLayer(clusterGroup);
 
-  armenianSites.forEach((site) => {
-    const marker = L.marker([site.lat, site.lng], { icon: createPulseIcon() });
-    marker.on("click", () => {
-      selectedPoint.value = site;
-      map.flyTo([site.lat, site.lng], 15, { animate: true, duration: 1.5 });
-      mapRef.value.classList.add("focused");
-    });
-    clusters.addLayer(marker);
-  });
+  watch(visitedIds, () => {
+    renderMarkers();
+  }, { immediate: true });
 
-  map.addLayer(clusters);
-  map.on("movestart", () => {
-    mapRef.value.classList.remove("focused");
-  });
+  map.on("movestart", () => mapRef.value.classList.remove("focused"));
 });
+
+const awardXP = (amount) => {
+  if (!user.value) return alert("Please login first!");
+  if (!selectedPoint.value) return;
+
+  navigator.geolocation.getCurrentPosition((position) => {
+    const dist = getDistance(position.coords.latitude, position.coords.longitude, selectedPoint.value.lat, selectedPoint.value.lng);
+
+    if (dist > 500) {
+      alert(`Too far! You are ${Math.round(dist)}m away. Move closer!`);
+      return;
+    }
+
+    if (visitedIds.value.includes(selectedPoint.value.id)) return;
+
+    const newVisited = [...visitedIds.value, selectedPoint.value.id];
+    
+    set(dbRef(db, 'users/' + user.value.uid), {
+      xp: (userXP.value || 0) + amount,
+      email: user.value.email,
+      visitedIds: newVisited
+    });
+  }, () => {
+    alert("Location access denied!");
+  });
+};
 
 const close = () => {
   selectedPoint.value = null;
   mapRef.value.classList.remove("focused");
 };
+
+const calculateLiveDistance = computed(() => {
+  if (!userLocation.value || !selectedPoint.value) return null;
+  return getDistance(
+    userLocation.value.lat,
+    userLocation.value.lng,
+    selectedPoint.value.lat,
+    selectedPoint.value.lng
+  );
+});
+
+// 3. Helper to make the distance look nice (m or km)
+const formatDistance = (meters) => {
+  if (meters < 1000) return `${Math.round(meters)}m`;
+  return `${(meters / 1000).toFixed(1)}km`;
+};
 </script>
+
 <style>
 @import "./assets/style.css";
-
-/* PROFESSIONAL PROFILE TRIGGER */
-.profile-trigger {
-  position: fixed;
-  top: 85px; /* Sits below your header */
-  left: 20px;
-  background: white;
-  border: none;
-  border-radius: 14px;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  z-index: 1000;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  transition: all 0.2s ease;
-}
-
-.profile-trigger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-}
-
-.avatar-container {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-}
-
-.trigger-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.xp-badge {
-  font-weight: 800;
-  color: #050505;
-  font-size: 13px;
-  letter-spacing: -0.5px;
-}
 </style>
