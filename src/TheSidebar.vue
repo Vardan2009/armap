@@ -75,7 +75,7 @@
           </button>
         </div>
 
-        <div v-else>
+        <div v-else-if="userData">
           <div class="profile-header">
             <img
               :src="
@@ -103,16 +103,18 @@
 
           <div class="stats-grid">
             <div class="stat-card">
-              <span class="stat-value">🏆 {{ userXP }}</span>
+              <span class="stat-value">🏆 {{ userData.xp }}</span>
               <span class="stat-label">Total XP</span>
             </div>
             <div class="stat-card">
-              <span class="stat-value">📍 {{ visitedCount }}</span>
+              <span class="stat-value"
+                >📍 {{ userData.visitedids.length }}</span
+              >
               <span class="stat-label">Visited</span>
             </div>
           </div>
 
-          <div class="leaderboard-section">
+          <!-- <div class="leaderboard-section">
             <h3 class="section-title">Global Leaderboard</h3>
             <div class="leaderboard-list">
               <div
@@ -134,7 +136,11 @@
                 </div>
               </template>
             </div>
-          </div>
+          </div> -->
+        </div>
+
+        <div v-else class="no-user-section">
+          <p>Loading user data...</p>
         </div>
 
         <p v-if="error" class="error">{{ error.message }}</p>
@@ -144,7 +150,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { KeyIcon } from "@heroicons/vue/24/solid";
 
 import { useAuth } from "./useAuth";
@@ -161,6 +167,7 @@ const {
 } = useAuth();
 
 const { userData } = useDB();
+import { supabase } from "./supabase";
 
 const props = defineProps({
   isOpen: Boolean,
@@ -171,20 +178,23 @@ const emit = defineEmits(["close"]);
 const email = ref("");
 const password = ref("");
 
-// onMounted(() => {
-//   const usersRef = dbRef(db, "users");
-//   onValue(usersRef, (snapshot) => {
-//     const data = snapshot.val();
-//     if (data) {
-//       const list = Object.entries(data).map(([uid, values]) => ({
-//         uid,
-//         displayName: values.displayName || values.email.split("@")[0],
-//         xp: values.xp || 0,
-//       }));
-//       allUsers.value = list.sort((a, b) => b.xp - a.xp);
-//     }
-//   });
-// });
+const allUsers = ref([]);
+
+const topTen = computed(() => allUsers.value.slice(0, 10));
+
+onMounted(() => {
+  supabase
+    .from("userData")
+    .select("uid,  xp")
+    .order("xp", { ascending: false })
+    .then(({ data, error: err }) => {
+      if (err) {
+        console.error("Error fetching leaderboard:", err);
+        return;
+      }
+      allUsers.value = data;
+    });
+});
 
 const handleLogin = async () => {
   if (!email.value || !password.value) {

@@ -3,11 +3,11 @@ import { supabase } from "./supabase";
 
 let authInitialized = false;
 
-export function useAuth() {
-  const user = ref(null);
-  const error = ref(null);
-  const loading = ref(false);
+const user = ref(null);
+const error = ref(null);
+const loading = ref(false);
 
+export function useAuth() {
   if (!authInitialized) {
     supabase.auth.onAuthStateChange((event, session) => {
       user.value = session?.user ?? null;

@@ -1,4 +1,11 @@
-export const armenianSites = [
+// THIS IS USED AS A REFERENCE, THE ACTUAL DATA IS FETCHED FROM DB
+// SEE src/useDB.js AND src/App.vue
+
+// Important notes:
+// in supabase, the column for `image` is called `imageURL`
+// There is a new column `xpAmount` that specifies how much XP each location gives
+
+const armenianSites = [
   {
     id: 1,
     name: "Matenadaran",

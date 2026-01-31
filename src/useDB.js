@@ -3,11 +3,11 @@ import { supabase } from "./supabase";
 
 let dbInitialized = false;
 
-export function useDB() {
-  const userData = ref(null);
-  const loading = ref(false);
-  const error = ref(null);
+const userData = ref(null);
+const loading = ref(false);
+const error = ref(null);
 
+export function useDB() {
   if (!dbInitialized) {
     supabase.auth.onAuthStateChange((event, session) => {
       if (!session?.user) {
@@ -44,25 +44,26 @@ export function useDB() {
   const visitLocation = async (locationId, userLat, userLng) => {
     const {
       data: { user },
-      error,
+      error: err1,
     } = await supabase.auth.getUser();
 
-    if (!user || error) {
+    if (!user || err1) {
       error.value = { message: "Not authenticated" };
       return null;
     }
 
     loading.value = true;
     const { data, error: err } = await supabase.rpc("visit_location", {
-      uid: user.id,
+      givenuid: user.id,
       loc_id: locationId,
       user_lat: userLat,
       user_lng: userLng,
     });
 
-    userData.value = data;
     error.value = err;
     loading.value = false;
+
+    fetchUserData();
     return data;
   };
 
