@@ -207,8 +207,19 @@ onMounted(() => {
     iconCreateFunction: (cluster) => {
       const count = cluster.getChildCount();
 
+      const markers = cluster.getAllChildMarkers();
+      const allVisited = markers.every((marker) => {
+        const markerLatLng = marker.getLatLng();
+        const site = armenianSites.value.find(
+          (s) => s.lat === markerLatLng.lat && s.lng === markerLatLng.lng
+        );
+        return userData.value?.visitedids?.includes(site.id);
+      });
+
       return L.divIcon({
-        html: `<div class="snap-cluster-container"><div class="snap-cluster-ring"></div><div class="snap-cluster-core"><span>${count}</span></div></div>`,
+        html: `<div class="snap-cluster-container ${
+          allVisited ? "all-visited" : ""
+        }"><div class="snap-cluster-ring"></div><div class="snap-cluster-core"><span>${count}</span></div></div>`,
         className: "custom-cluster",
         iconSize: L.point(40, 40),
       });
@@ -305,7 +316,6 @@ const calculateLiveDistance = computed(() => {
   );
 });
 
-// 3. Helper to make the distance look nice (m or km)
 const formatDistance = (meters) => {
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;

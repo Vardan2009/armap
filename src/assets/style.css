@@ -15,7 +15,7 @@ body {
   --primary-color: #356cb8;
   --primary-color-lighter: #5992e3;
   --primary-color-text: var(--primary-color);
-  --blue-color: #30ffe3; /* The bright teal/blue from your code */
+  --blue-color: #30ffe3;
   --snap-green: #2ecc71;
   --snap-green-pulse: rgba(46, 204, 113, 0.4);
   user-select: none;
@@ -412,6 +412,15 @@ a:active {
   font-weight: bold;
   font-size: 14px;
   box-shadow: 0 0 10px var(--primary-color);
+}
+
+.snap-cluster-container.all-visited .snap-cluster-core {
+  background: var(--snap-green);
+  box-shadow: 0 0 10px var(--snap-green);
+}
+
+.snap-cluster-container.all-visited .snap-cluster-ring {
+  background: var(--snap-green-pulse);
 }
 
 .snap-cluster-ring {
