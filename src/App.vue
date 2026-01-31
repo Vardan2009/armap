@@ -18,7 +18,7 @@
       />
       <UserIcon v-else class="trigger-img" />
     </div>
-    <span v-if="user" class="xp-badge">{{ userXP }} XP</span>
+    <span v-if="user" class="xp-badge">{{ userData?.xp ?? "No" }} XP</span>
   </button>
 
   <button
@@ -35,7 +35,7 @@
     <div v-if="selectedPoint" class="story-card">
       <button @click="close" class="close-btn">✕</button>
       <div class="card-image-container">
-        <img :src="selectedPoint.image" class="location-image" />
+        <img :src="selectedPoint.imageURL" class="location-image" />
         <div class="image-gradient"></div>
       </div>
       <div class="card-content">
@@ -43,7 +43,7 @@
         <h2>{{ selectedPoint.name }}</h2>
         <p>{{ selectedPoint.description }}</p>
         <div class="stats">
-          <div class="stat-item">🏆 50 XP</div>
+          <div class="stat-item">🏆 {{ selectedPoint.xpAmount }} XP</div>
           <div class="stat-item">
             📍 {{ formatDistance(calculateLiveDistance) }} away
           </div>
@@ -58,15 +58,20 @@
           </a>
 
           <button
-            v-if="!visitedIds.includes(selectedPoint.id)"
-            @click="awardXP(50)"
+            v-if="!userData.visitedids.includes(selectedPoint.id)"
+            @click="awardXP(selectedPoint)"
             class="checkin-btn"
-            :disabled="userLocation === null || xpLoading"
+            :disabled="
+              userLocation === null || xpLoading || calculateLiveDistance > 500
+            "
           >
             <template v-if="userLocation === null || xpLoading">
               Please wait...
             </template>
-            <template v-else> Claim 50 XP </template>
+            <template v-else-if="calculateLiveDistance > 500">
+              Too far away
+            </template>
+            <template v-else> Claim {{ selectedPoint.xpAmount }} XP </template>
           </button>
 
           <button v-else class="checkin-btn visited" disabled>
@@ -77,13 +82,7 @@
     </div>
   </Transition>
 
-  <TheSidebar
-    :isOpen="isSidebarOpen"
-    :userXP="userXP"
-    :user="user"
-    :visitedCount="visitedIds.length"
-    @close="isSidebarOpen = false"
-  />
+  <TheSidebar @close="isSidebarOpen = false" :isOpen="isSidebarOpen" />
 </template>
 
 <script setup>
@@ -94,17 +93,17 @@ import TheSidebar from "./TheSidebar.vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
-import { armenianSites } from "./locations.js";
-import { auth, db } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { ref as dbRef, set, onValue } from "firebase/database";
+
+import { useAuth } from "./useAuth";
+import { useDB } from "./useDB";
+import { supabase } from "./supabase";
+
+const { user } = useAuth();
+const { userData, visitLocation, error: dbError, fetchUserData } = useDB();
 
 const isSidebarOpen = ref(false);
 const mapRef = ref(null);
 const selectedPoint = ref(null);
-const user = ref(null);
-const userXP = ref(0);
-const visitedIds = ref([]);
 const userLocation = ref(null);
 let map;
 let clusterGroup; // Top-level variable
@@ -115,6 +114,8 @@ let userMarker = L.circleMarker([0, 0], {
 });
 
 const xpLoading = ref(false);
+
+const armenianSites = ref([]);
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371000;
@@ -130,12 +131,23 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+const updateMapData = async () => {
+  await fetchUserData();
+  armenianSites.value = supabase
+    .from("locations")
+    .select("*")
+    .then(({ data }) => {
+      armenianSites.value = data;
+      renderMarkers();
+    });
+};
+
 const renderMarkers = () => {
   if (!clusterGroup || !map) return;
   clusterGroup.clearLayers();
 
-  armenianSites.forEach((site) => {
-    const isVisited = visitedIds.value.includes(site.id);
+  armenianSites.value.forEach((site) => {
+    const isVisited = userData.value?.visitedids?.includes(site.id) || false;
 
     const marker = L.marker([site.lat, site.lng], {
       icon: L.divIcon({
@@ -158,18 +170,7 @@ const renderMarkers = () => {
 };
 
 onMounted(() => {
-  onAuthStateChanged(auth, (currentUser) => {
-    user.value = currentUser;
-    if (currentUser) {
-      onValue(dbRef(db, "users/" + currentUser.uid), (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          userXP.value = data.xp || 0;
-          visitedIds.value = data.visitedIds || [];
-        }
-      });
-    }
-  });
+  updateMapData();
 
   navigator.geolocation.watchPosition((position) => {
     userLocation.value = {
@@ -206,8 +207,19 @@ onMounted(() => {
     iconCreateFunction: (cluster) => {
       const count = cluster.getChildCount();
 
+      const markers = cluster.getAllChildMarkers();
+      const allVisited = markers.every((marker) => {
+        const markerLatLng = marker.getLatLng();
+        const site = armenianSites.value.find(
+          (s) => s.lat === markerLatLng.lat && s.lng === markerLatLng.lng
+        );
+        return userData.value?.visitedids?.includes(site.id);
+      });
+
       return L.divIcon({
-        html: `<div class="snap-cluster-container"><div class="snap-cluster-ring"></div><div class="snap-cluster-core"><span>${count}</span></div></div>`,
+        html: `<div class="snap-cluster-container ${
+          allVisited ? "all-visited" : ""
+        }"><div class="snap-cluster-ring"></div><div class="snap-cluster-core"><span>${count}</span></div></div>`,
         className: "custom-cluster",
         iconSize: L.point(40, 40),
       });
@@ -215,14 +227,6 @@ onMounted(() => {
   });
 
   map.addLayer(clusterGroup);
-
-  watch(
-    visitedIds,
-    () => {
-      renderMarkers();
-    },
-    { immediate: true }
-  );
 
   watch(
     userLocation,
@@ -239,25 +243,34 @@ onMounted(() => {
 
 const moveViewToLocation = () => {
   if (!userLocation.value || !map) return;
+  if (xpLoading.value) return;
   map.flyTo([userLocation.value.lat, userLocation.value.lng], 15, {
     animate: true,
   });
   mapRef.value.classList.add("focused");
 };
 
-const awardXP = (amount) => {
+const awardXP = (selectedPoint) => {
   if (xpLoading.value) return;
   xpLoading.value = true;
-  if (!user.value) return alert("Please login first!");
-  if (!selectedPoint.value) return;
+
+  if (!user.value) {
+    xpLoading.value = false;
+    return alert("Please login first!");
+  }
+
+  if (!selectedPoint) {
+    xpLoading.value = false;
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const dist = getDistance(
         position.coords.latitude,
         position.coords.longitude,
-        selectedPoint.value.lat,
-        selectedPoint.value.lng
+        selectedPoint.lat,
+        selectedPoint.lng
       );
 
       if (dist > 500) {
@@ -267,16 +280,19 @@ const awardXP = (amount) => {
         return;
       }
 
-      if (visitedIds.value.includes(selectedPoint.value.id)) return;
-
-      const newVisited = [...visitedIds.value, selectedPoint.value.id];
-
-      set(dbRef(db, "users/" + user.value.uid), {
-        xp: (userXP.value || 0) + amount,
-        email: user.value.email,
-        visitedIds: newVisited,
+      visitLocation(
+        selectedPoint.id,
+        position.coords.latitude,
+        position.coords.longitude
+      ).then(() => {
+        if (dbError.value) {
+          alert(`Error: ${dbError.value.message}`);
+          xpLoading.value = false;
+          return;
+        }
+        xpLoading.value = false;
+        updateMapData();
       });
-      xpLoading.value = false;
     },
     () => {
       alert("Location access denied!");
@@ -300,7 +316,6 @@ const calculateLiveDistance = computed(() => {
   );
 });
 
-// 3. Helper to make the distance look nice (m or km)
 const formatDistance = (meters) => {
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;
