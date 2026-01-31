@@ -18,7 +18,7 @@
       />
       <UserIcon v-else class="trigger-img" />
     </div>
-    <span v-if="user" class="xp-badge">{{ userXP }} XP</span>
+    <span v-if="user" class="xp-badge">{{ userData?.xp ?? "No" }} XP</span>
   </button>
 
   <button
@@ -77,13 +77,7 @@
     </div>
   </Transition>
 
-  <TheSidebar
-    :isOpen="isSidebarOpen"
-    :userXP="userXP"
-    :user="user"
-    :visitedCount="visitedIds.length"
-    @close="isSidebarOpen = false"
-  />
+  <TheSidebar @close="isSidebarOpen = false" :isOpen="isSidebarOpen" />
 </template>
 
 <script setup>
@@ -95,16 +89,16 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
 import { armenianSites } from "./locations.js";
-import { auth, db } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { ref as dbRef, set, onValue } from "firebase/database";
+
+import { useAuth } from "./useAuth";
+import { useDB } from "./useDB";
+
+const { user } = useAuth();
+const { userData } = useDB();
 
 const isSidebarOpen = ref(false);
 const mapRef = ref(null);
 const selectedPoint = ref(null);
-const user = ref(null);
-const userXP = ref(0);
-const visitedIds = ref([]);
 const userLocation = ref(null);
 let map;
 let clusterGroup; // Top-level variable
@@ -135,7 +129,7 @@ const renderMarkers = () => {
   clusterGroup.clearLayers();
 
   armenianSites.forEach((site) => {
-    const isVisited = visitedIds.value.includes(site.id);
+    const isVisited = userData.value?.visitedIds?.includes(site.id) || false;
 
     const marker = L.marker([site.lat, site.lng], {
       icon: L.divIcon({
@@ -158,18 +152,18 @@ const renderMarkers = () => {
 };
 
 onMounted(() => {
-  onAuthStateChanged(auth, (currentUser) => {
-    user.value = currentUser;
-    if (currentUser) {
-      onValue(dbRef(db, "users/" + currentUser.uid), (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          userXP.value = data.xp || 0;
-          visitedIds.value = data.visitedIds || [];
-        }
-      });
-    }
-  });
+  // onAuthStateChanged(auth, (currentUser) => {
+  //   user.value = currentUser;
+  //   if (currentUser) {
+  //     onValue(dbRef(db, "users/" + currentUser.uid), (snapshot) => {
+  //       const data = snapshot.val();
+  //       if (data) {
+  //         userXP.value = data.xp || 0;
+  //         visitedIds.value = data.visitedIds || [];
+  //       }
+  //     });
+  //   }
+  // });
 
   navigator.geolocation.watchPosition((position) => {
     userLocation.value = {
@@ -217,7 +211,7 @@ onMounted(() => {
   map.addLayer(clusterGroup);
 
   watch(
-    visitedIds,
+    userData,
     () => {
       renderMarkers();
     },

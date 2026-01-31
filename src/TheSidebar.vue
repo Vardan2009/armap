@@ -38,26 +38,26 @@
             type="email"
             placeholder="Email"
             class="auth-input"
-            :disabled="isLoading"
+            :disabled="loading"
           />
           <input
             v-model="password"
             type="password"
             placeholder="Password"
             class="auth-input"
-            :disabled="isLoading"
+            :disabled="loading"
           />
           <button
             @click="handleLogin"
             class="action-btn auth-btn"
-            :disabled="isLoading"
+            :disabled="loading"
           >
-            {{ isLoading ? "Logging in..." : "Login" }}
+            Login
           </button>
           <button
             @click="handleRegister"
             class="action-btn secondary-style auth-btn"
-            :disabled="isLoading"
+            :disabled="loading"
           >
             Create Account
           </button>
@@ -65,7 +65,7 @@
           <button
             @click="handleGoogleLogin"
             class="google-btn"
-            :disabled="isLoading"
+            :disabled="loading"
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -95,10 +95,10 @@
           <button
             @click="handleLogout"
             class="action-btn logout-btn"
-            :disabled="isLoading"
+            :disabled="loading"
           >
             <KeyIcon class="inline-icon" />
-            {{ isLoading ? "Logging out..." : "Log out" }}
+            {{ loading ? "Logging out..." : "Log out" }}
           </button>
 
           <div class="stats-grid">
@@ -137,7 +137,7 @@
           </div>
         </div>
 
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        <p v-if="error" class="error">{{ error.message }}</p>
       </div>
     </div>
   </div>
@@ -145,113 +145,64 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { auth, db } from "./firebase";
-import { ref as dbRef, onValue } from "firebase/database";
 import { KeyIcon } from "@heroicons/vue/24/solid";
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
+
+import { useAuth } from "./useAuth";
+import { useDB } from "./useDB";
+
+const {
+  user,
+  error,
+  loading,
+  signupWithEmail,
+  loginWithEmail,
+  loginWithGoogle,
+  logout,
+} = useAuth();
+
+const { userData } = useDB();
 
 const props = defineProps({
   isOpen: Boolean,
-  userXP: Number,
-  visitedCount: Number,
-  user: Object,
 });
 
 const emit = defineEmits(["close"]);
 
 const email = ref("");
 const password = ref("");
-const errorMessage = ref("");
-const isLoading = ref(false);
-const allUsers = ref([]);
 
-onMounted(() => {
-  const usersRef = dbRef(db, "users");
-  onValue(usersRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      const list = Object.entries(data).map(([uid, values]) => ({
-        uid,
-        displayName: values.displayName || values.email.split("@")[0],
-        xp: values.xp || 0,
-      }));
-      allUsers.value = list.sort((a, b) => b.xp - a.xp);
-    }
-  });
-});
-
-const topTen = computed(() => allUsers.value.slice(0, 10));
-
-const userRank = computed(() => {
-  if (!props.user) return 0;
-  return allUsers.value.findIndex((u) => u.uid === props.user.uid) + 1;
-});
+// onMounted(() => {
+//   const usersRef = dbRef(db, "users");
+//   onValue(usersRef, (snapshot) => {
+//     const data = snapshot.val();
+//     if (data) {
+//       const list = Object.entries(data).map(([uid, values]) => ({
+//         uid,
+//         displayName: values.displayName || values.email.split("@")[0],
+//         xp: values.xp || 0,
+//       }));
+//       allUsers.value = list.sort((a, b) => b.xp - a.xp);
+//     }
+//   });
+// });
 
 const handleLogin = async () => {
   if (!email.value || !password.value) {
-    errorMessage.value = "Please fill in all fields.";
     return;
   }
-  isLoading.value = true;
-  try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
-    errorMessage.value = "";
-    emit("close");
-  } catch (err) {
-    errorMessage.value = "Login failed. Check your credentials.";
-  } finally {
-    isLoading.value = false;
-  }
+  await loginWithEmail(email.value, password.value);
 };
 
 const handleRegister = async () => {
-  if (password.value.length < 6) {
-    errorMessage.value = "Password must be at least 6 characters.";
-    return;
-  }
-  isLoading.value = true;
-  try {
-    await createUserWithEmailAndPassword(auth, email.value, password.value);
-    errorMessage.value = "";
-    emit("close");
-  } catch (err) {
-    errorMessage.value = "Registration failed. This email might already exist.";
-  } finally {
-    isLoading.value = false;
-  }
+  await signupWithEmail(email.value, password.value);
 };
 
 const handleGoogleLogin = async () => {
-  isLoading.value = true;
-  const provider = new GoogleAuthProvider();
-  try {
-    await signInWithPopup(auth, provider);
-    errorMessage.value = "";
-  } catch (err) {
-    errorMessage.value = "Google login failed.";
-  } finally {
-    isLoading.value = false;
-  }
+  await loginWithGoogle();
 };
 
 const handleLogout = () => {
-  isLoading.value = true;
-  signOut(auth)
-    .then(() => {
-      errorMessage.value = "";
-    })
-    .catch(() => {
-      errorMessage.value = "Logout failed.";
-    })
-    .finally(() => {
-      isLoading.value = false;
-    });
+  logout();
 };
 </script>
 
