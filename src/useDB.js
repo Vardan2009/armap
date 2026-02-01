@@ -67,11 +67,26 @@ export function useDB() {
     return data;
   };
 
+  const getGlobalLeaderboard = async () => {
+    loading.value = true;
+
+    const { data, error: err } = await supabase.rpc("get_global_leaderboard");
+    error.value = err;
+    if (error.value) {
+      alert("Error:", error.value.message);
+    }
+    loading.value = false;
+    return data;
+  };
+
+  getGlobalLeaderboard();
+
   return {
     userData,
     loading,
     error,
     fetchUserData,
     visitLocation,
+    getGlobalLeaderboard,
   };
 }

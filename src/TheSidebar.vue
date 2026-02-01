@@ -115,7 +115,7 @@
             </div>
           </div>
 
-          <!-- <div class="leaderboard-section">
+          <div class="leaderboard-section">
             <h3 class="section-title">Global Leaderboard</h3>
             <div class="leaderboard-list">
               <div
@@ -124,7 +124,7 @@
                 :class="['leader-item', { 'is-me': player.uid === user.uid }]"
               >
                 <span class="rank">#{{ index + 1 }}</span>
-                <span class="name">{{ player.displayName }}</span>
+                <span class="name">{{ player.name }}</span>
                 <span class="xp">{{ player.xp }} XP</span>
               </div>
 
@@ -137,7 +137,7 @@
                 </div>
               </template>
             </div>
-          </div> -->
+          </div>
         </div>
 
         <div v-else class="no-user-section">
@@ -167,7 +167,7 @@ const {
   logout,
 } = useAuth();
 
-const { userData } = useDB();
+const { userData, getGlobalLeaderboard } = useDB();
 import { supabase } from "./supabase";
 
 const props = defineProps({
@@ -179,22 +179,16 @@ const emit = defineEmits(["close"]);
 const email = ref("");
 const password = ref("");
 
-const allUsers = ref([]);
+const globalLeaderboard = ref(null);
 
-const topTen = computed(() => allUsers.value.slice(0, 10));
+const topTen = computed(() => {
+  if (!globalLeaderboard.value) return [];
+  return globalLeaderboard.value.slice(0, 10);
+});
 
-onMounted(() => {
-  supabase
-    .from("userData")
-    .select("uid,  xp")
-    .order("xp", { ascending: false })
-    .then(({ data, error: err }) => {
-      if (err) {
-        console.error("Error fetching leaderboard:", err);
-        return;
-      }
-      allUsers.value = data;
-    });
+onMounted(async () => {
+  globalLeaderboard.value = await getGlobalLeaderboard();
+  console.log(globalLeaderboard.value);
 });
 
 const handleLogin = async () => {
