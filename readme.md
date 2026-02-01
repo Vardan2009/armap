@@ -29,7 +29,8 @@ ArMap is a web application designed to help users explore the cultural heritage 
 ## Tech Stack
 
 - **Frontend:** Vue 3
-- **Maps:** Leaflet + CARTO
+- **Backend** Supabase/PostgreSQL
+- **Maps:** Leaflet + CARTO Tiles
 
 ---
 
