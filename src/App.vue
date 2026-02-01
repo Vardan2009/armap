@@ -18,7 +18,11 @@
       />
       <UserIcon v-else class="trigger-img" />
     </div>
-    <span v-if="user" class="xp-badge">{{ userData?.xp ?? "No" }} XP</span>
+    <span v-if="userData" class="xp-badge"
+      >{{ userData?.xp ?? "No" }} XP ({{
+        ((userData.visitedids.length / armenianSites.length) * 100).toFixed(1)
+      }}% complete)</span
+    >
   </button>
 
   <button
