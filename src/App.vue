@@ -57,26 +57,33 @@
             <MapIcon class="inline-icon" /> Maps
           </a>
 
-          <button
-            v-if="!userData.visitedids.includes(selectedPoint.id)"
-            @click="awardXP(selectedPoint)"
-            class="checkin-btn"
-            :disabled="
-              userLocation === null || xpLoading || calculateLiveDistance > 500
-            "
-          >
-            <template v-if="userLocation === null || xpLoading">
-              Please wait...
-            </template>
-            <template v-else-if="calculateLiveDistance > 500">
-              Too far away
-            </template>
-            <template v-else> Claim {{ selectedPoint.xpAmount }} XP </template>
-          </button>
+          <template v-if="userData">
+            <button
+              v-if="!userData?.visitedids?.includes(selectedPoint.id)"
+              @click="awardXP(selectedPoint)"
+              class="checkin-btn"
+              :disabled="
+                userLocation === null ||
+                xpLoading ||
+                calculateLiveDistance > 500
+              "
+            >
+              <template v-if="xpLoading"> Please wait... </template>
+              <template v-else-if="userLocation == null">
+                Location not available
+              </template>
+              <template v-else-if="calculateLiveDistance > 500">
+                Too far away
+              </template>
+              <template v-else>
+                Claim {{ selectedPoint.xpAmount }} XP
+              </template>
+            </button>
 
-          <button v-else class="checkin-btn visited" disabled>
-            Visited ✅
-          </button>
+            <button v-else class="checkin-btn visited" disabled>
+              Visited ✅
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -197,7 +204,7 @@ onMounted(() => {
     "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
     {
       className: "map-tiles",
-    }
+    },
   ).addTo(map);
 
   clusterGroup = L.markerClusterGroup({
@@ -211,7 +218,7 @@ onMounted(() => {
       const allVisited = markers.every((marker) => {
         const markerLatLng = marker.getLatLng();
         const site = armenianSites.value.find(
-          (s) => s.lat === markerLatLng.lat && s.lng === markerLatLng.lng
+          (s) => s.lat === markerLatLng.lat && s.lng === markerLatLng.lng,
         );
         return userData.value?.visitedids?.includes(site.id);
       });
@@ -235,7 +242,7 @@ onMounted(() => {
 
       userMarker.setLatLng([newLocation.lat, newLocation.lng]);
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   map.on("movestart", () => mapRef.value.classList.remove("focused"));
@@ -270,7 +277,7 @@ const awardXP = (selectedPoint) => {
         position.coords.latitude,
         position.coords.longitude,
         selectedPoint.lat,
-        selectedPoint.lng
+        selectedPoint.lng,
       );
 
       if (dist > 500) {
@@ -283,7 +290,7 @@ const awardXP = (selectedPoint) => {
       visitLocation(
         selectedPoint.id,
         position.coords.latitude,
-        position.coords.longitude
+        position.coords.longitude,
       ).then(() => {
         if (dbError.value) {
           alert(`Error: ${dbError.value.message}`);
@@ -297,7 +304,7 @@ const awardXP = (selectedPoint) => {
     () => {
       alert("Location access denied!");
       xpLoading.value = false;
-    }
+    },
   );
 };
 
@@ -312,7 +319,7 @@ const calculateLiveDistance = computed(() => {
     userLocation.value.lat,
     userLocation.value.lng,
     selectedPoint.value.lat,
-    selectedPoint.value.lng
+    selectedPoint.value.lng,
   );
 });
 
