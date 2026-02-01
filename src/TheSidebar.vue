@@ -121,7 +121,15 @@
               <div
                 v-for="(player, index) in topTen"
                 :key="player.uid"
-                :class="['leader-item', { 'is-me': player.uid === user.uid }]"
+                :class="[
+                  'leader-item',
+                  {
+                    'is-me': player.uid === user.id,
+                    'is-first': index == 0,
+                    'is-second': index == 1,
+                    'is-third': index == 2,
+                  },
+                ]"
               >
                 <span class="rank">#{{ index + 1 }}</span>
                 <span class="name">{{ player.name }}</span>
@@ -132,8 +140,10 @@
                 <div class="leader-divider">•••</div>
                 <div class="leader-item is-me">
                   <span class="rank">#{{ userRank }}</span>
-                  <span class="name">You</span>
-                  <span class="xp">{{ userXP }} XP</span>
+                  <span class="name">{{
+                    user.user_metadata.name || user.email.split("@")[0]
+                  }}</span>
+                  <span class="xp">{{ userData.xp }} XP</span>
                 </div>
               </template>
             </div>
@@ -168,7 +178,6 @@ const {
 } = useAuth();
 
 const { userData, getGlobalLeaderboard } = useDB();
-import { supabase } from "./supabase";
 
 const props = defineProps({
   isOpen: Boolean,
@@ -186,9 +195,13 @@ const topTen = computed(() => {
   return globalLeaderboard.value.slice(0, 10);
 });
 
+const userRank = computed(() => {
+  if (!globalLeaderboard.value) return 0;
+  return globalLeaderboard.value.findIndex((el) => el.uid == user.id) + 1;
+});
+
 onMounted(async () => {
   globalLeaderboard.value = await getGlobalLeaderboard();
-  console.log(globalLeaderboard.value);
 });
 
 const handleLogin = async () => {
@@ -460,12 +473,28 @@ const handleLogout = () => {
   border: 1px solid transparent;
 }
 
+.leader-item .rank {
+  color: var(--primary-color);
+}
+
 .leader-item.is-me {
   border-color: var(--primary-color);
   background: rgba(53, 108, 184, 0.05);
 }
 
-.leader-item.is-me::after {
+.leader-item.is-first {
+  --primary-color: #e09834;
+}
+
+.leader-item.is-second {
+  --primary-color: #696e70;
+}
+
+.leader-item.is-third {
+  --primary-color: #854120;
+}
+
+.leader-item.is-me .name::after {
   content: "(You)";
   font-size: 12px;
   color: var(--primary-color);
